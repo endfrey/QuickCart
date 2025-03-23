@@ -1,6 +1,7 @@
 import { inngest } from "@/config/inngest";
+import Product from "@/model/Product";
 import User from "@/model/User";
-import Product from "@/models/Product";
+
 import { getAuth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
