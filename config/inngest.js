@@ -31,7 +31,7 @@ export const  syncUserCration = inngest.createFunction(
                 imageUrl:image_url
 
             }
-            await connnectDB()
+            await connectDB()
             await User.create(userData)
                       
         } 
@@ -55,7 +55,7 @@ export const syncUserUpdation = inngest.createFunction(
             imageUrl : image_url
 
         }
-        await connnectDB()
+        await connectDB()
         await User.findByIdAndUpdate(id,userData)
     }
 )
@@ -69,7 +69,7 @@ export const syncUserDeletion = inngest.createFunction(
     async ({event}) =>
     {
         const {id} = event.data
-        await connnectDB()
+        await connectDB()
         await User.findOneAndDelete(id)
     }
 )
@@ -96,7 +96,7 @@ export  const createUserOrder = inngest.createFunction(
             }
         })
 
-        await connnectDB()
+        await connectDB()
         await Order.insertMany(orders)
 
         return { success: true, processed: orders.length};
