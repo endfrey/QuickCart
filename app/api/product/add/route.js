@@ -1,4 +1,3 @@
-
 import connectDB from "@/config/db";
 import authSeller from "@/lib/authSeller";
 import Product from "@/model/Product";
@@ -8,7 +7,6 @@ import { v2 as cloudinary } from "cloudinary";
 import { NextResponse } from "next/server";
 
 // configure cloudinary
-
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -41,7 +39,8 @@ export async function POST(request) {
         message: "No Files Uploaded",
       });
     }
-       // Upload to Cloudinary
+
+    // Upload to Cloudinary
     const result = await Promise.all(
       files.map(async (file) => {
         const arrayBuffer = await file.arrayBuffer();
@@ -58,28 +57,36 @@ export async function POST(request) {
               }
             }
           );
-          stream.end(buffer)
+          stream.end(buffer);
         });
       })
     );
 
-    const image = result.map(result => result.secure_url)
+    const image = result.map(result => result.secure_url);
 
-    await connectDB()
+    await connectDB();
     const newProduct = await Product.create({
-        userId,
-        name,
-        description,
-        category,
-        price:Number(price),
-        offerPrice:Number(offerPrice),
-        image,
-        date: Date.now()
-    })
+      userId,
+      name,
+      description,
+      category,
+      price: Number(price),
+      offerPrice: Number(offerPrice),
+      image,
+      date: Date.now(),
+    });
 
-    return NextResponse.json({success:true, message:'Upload successfuly',newProduct})
+    return NextResponse.json({
+      success: true,
+      message: "Uploaded successfully",
+      newProduct,
+    });
 
   } catch (error) {
-    NextResponse.json({ success: false, message: error.message });
+    // Make sure to return the response in the catch block
+    return NextResponse.json({
+      success: false,
+      message: error.message,
+    });
   }
 }
