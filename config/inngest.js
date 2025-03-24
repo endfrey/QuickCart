@@ -1,7 +1,4 @@
-
-
-import { Inngest } from "@inngest/inngest-node";
-
+import { Inngest } from "inngest";
 import connectDB from "./db";
 import User from "@/model/User";
 
