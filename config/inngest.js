@@ -1,9 +1,9 @@
-import { Inngest } from "inngest";
+
+
+import { Inngest } from "@inngest/inngest-node";
+
 import connectDB from "./db";
 import User from "@/model/User";
-
- 
-//import Order from "@/models/Order";
 
 
 // Create a client to send and receive events
@@ -14,7 +14,7 @@ export const inngest = new Inngest({ id: "Quickcart-next" });
 
 // inngest  function to save user data to a database 
 
-export const  syncUserCration = inngest.createFunction(
+export const  syncUserCration= inngest.createFunction(
     {
         id:'sync-user-form-clerk'
     },
@@ -32,7 +32,7 @@ export const  syncUserCration = inngest.createFunction(
                 imageUrl:image_url
 
             }
-            await connectDB()
+            await connectDB
             await User.create(userData)
                       
         } 
