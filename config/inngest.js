@@ -1,37 +1,89 @@
-import connectDB from "@/config/db";
-import Address from "@/model/Address";
-import { getAuth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { Inngest } from "inngest";
+import connectDB from "./db";
+import User from "@/model/User";
+import Order from "@/model/Order";
 
-export async function POST(request) {
-    try {
-        const { userId } = getAuth(request);
+// Create a client to send and receive events
+export const inngest = new Inngest({ id: "Quickcart-next" });
 
-        // ตรวจสอบว่า userId มีค่าหรือไม่
-        if (!userId) {
-            return NextResponse.json({ success: false, message: "User not authenticated" });
-        }
+// Inngest function to save user data to a database
+export const syncUserCration = inngest.createFunction(
+  {
+    id: 'sync-user-form-clerk'
+  },
+  { event: 'clerk/user.created' },
+  async ({ event }) => {
+    const { id, first_name, last_name, email_addresses, image_url } = event.data;
+    const userData = {
+      _id: id,
+      email: email_addresses[0].email_address,
+      name: `${first_name} ${last_name}`,
+      imageUrl: image_url
+    };
 
-        // ดึงข้อมูล address จาก request body
-        const { address } = await request.json();
+    await connectDB();
+    await User.create(userData);
+  }
+);
 
-        // ตรวจสอบว่า address มีข้อมูลหรือไม่
-        if (!address || Object.keys(address).length === 0) {
-            return NextResponse.json({ success: false, message: "Invalid address data" });
-        }
+// Inngest function to update user data table
+export const syncUserUpdation = inngest.createFunction(
+  {
+    id: 'update-user-from-clerk'
+  },
+  { event: 'clerk/user.updated' },
+  async ({ event }) => {
+    const { id, first_name, last_name, email_addresses, image_url } = event.data;
+    const userData = {
+      _id: id,
+      email: email_addresses[0].email_address,
+      name: `${first_name} ${last_name}`,
+      imageUrl: image_url
+    };
 
-        // เชื่อมต่อฐานข้อมูล
-        await connectDB();
+    await connectDB();
+    await User.findByIdAndUpdate(id, userData);
+  }
+);
 
-        // สร้างที่อยู่ใหม่ในฐานข้อมูล
-        const newAddress = await Address.create({ ...address, userId });
+// Inngest function to delete user data
+export const syncUserDeletion = inngest.createFunction(
+  {
+    id: 'delete-user-with-clerk'
+  },
+  { event: 'clerk/user.deleted' },
+  async ({ event }) => {
+    const { id } = event.data;
 
-        // ส่งการตอบกลับเมื่อสำเร็จ
-        return NextResponse.json({ success: true, message: 'Address Added Successfully', newAddress });
+    await connectDB();
+    await User.findOneAndDelete(id);
+  }
+);
 
-    } catch (error) {
-        // จัดการข้อผิดพลาดและส่งข้อความกลับ
-        console.error(error); // สำหรับการดีบัก
-        return NextResponse.json({ success: false, message: error.message });
+// Inngest function to create user's order in the database
+export const createUserOrder = inngest.createFunction(
+  {
+    id: 'create-user-order',
+    batchEvents: {
+      maxSize: 5,
+      timeout: '5s'
     }
-}
+  },
+  { event: 'order/created' },
+  async ({ events }) => {
+    const orders = events.map((event) => {
+      return {
+        userId: event.data.userId,
+        items: event.data.items,
+        amount: event.data.amount,
+        address: event.data.address,
+        date: event.data.date
+      };
+    });
+
+    await connectDB();
+    await Order.insertMany(orders);
+
+    return { success: true, processed: orders.length };
+  }
+);
